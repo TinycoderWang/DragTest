@@ -45,15 +45,14 @@ public class SortView extends View {
     float lastX;
 
     int PADDING = 40;
-    float dragMinX;
-    float dragMaxX;
-    float startX;
-    float endX;
+    float canDragMinX;
+    float canDragMaxX;
+    float bmpStartX;
+    float bmpEndX;
 
     int screenWidth;
     ArrayList<RectF> allPositions = new ArrayList<>();
     ArrayList<Integer> allIndex = new ArrayList<>();
-    RectF dragRect;
     int viewHeight;
     boolean notDraw = true;
 
@@ -103,7 +102,6 @@ public class SortView extends View {
         linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         linePaint.setStrokeWidth(4);
         bmpRect = new RectF();
-        dragRect = new RectF();
         for (int i = 0; i < allCount; i++) {
             allPositions.add(new RectF());
         }
@@ -136,14 +134,15 @@ public class SortView extends View {
             }
             canvas.drawBitmap(mBitmap,null,bmpRect,bitmapPaint);
         }
-        canvas.drawBitmap(mBitmap,null,dragRect,bitmapPaint);
+        bmpRect = allPositions.get(downIndex);
+        canvas.drawBitmap(mBitmap,null,bmpRect,bitmapPaint);
         // 画边界线
         linePaint.setColor(Color.RED);
-        canvas.drawLine(dragMinX,0,dragMinX,viewHeight,linePaint);
-        canvas.drawLine(dragMaxX,0,dragMaxX,viewHeight,linePaint);
+        canvas.drawLine(canDragMinX,0, canDragMinX,viewHeight,linePaint);
+        canvas.drawLine(canDragMaxX,0, canDragMaxX,viewHeight,linePaint);
         linePaint.setColor(Color.GREEN);
-        canvas.drawLine(startX,0,startX,viewHeight,linePaint);
-        canvas.drawLine(endX,0,endX,viewHeight,linePaint);
+        canvas.drawLine(bmpStartX,0, bmpStartX,viewHeight,linePaint);
+        canvas.drawLine(bmpEndX,0, bmpEndX,viewHeight,linePaint);
     }
 
     @Override
@@ -156,11 +155,11 @@ public class SortView extends View {
                 downIndex = random.nextInt(allCount);
                 Log.e(TAG,"downIndex = "+downIndex);
                 getLocationOnScreen(windowLocation);
-                dragMinX = -windowLocation[0] + PADDING;
-                dragMaxX = -windowLocation[0] + screenWidth - PADDING;
+                canDragMinX = -windowLocation[0] + PADDING;
+                canDragMaxX = -windowLocation[0] + screenWidth - PADDING;
                 lastX = event.getX();
                 float start = lastX - (viewHeight >> 1) - downIndex * viewHeight;
-                startX = start;
+                bmpStartX = start;
                 allIndex.clear();
                 RectF rectF;
                 for (int i = 0; i < allPositions.size(); i++) {
@@ -171,17 +170,11 @@ public class SortView extends View {
                     rectF.left = start;
                     start+=viewHeight;
                     rectF.right = start;
-                    if(i == downIndex){
-                        dragRect.top = rectF.top;
-                        dragRect.bottom = rectF.bottom;
-                        dragRect.left = rectF.left;
-                        dragRect.right = rectF.right;
-                    }
                 }
-                endX = start;
+                bmpEndX = start;
                 getParent().requestDisallowInterceptTouchEvent(true);
                 Log.d(TAG,"ACTION_DOWN : windowLocation[0] = "+windowLocation[0]+" , lastX = "+lastX
-                +" , dragMinX = "+dragMinX+" , dragMaxX = "+dragMaxX
+                +" , dragMinX = "+ canDragMinX +" , dragMaxX = "+ canDragMaxX
                 );
                 invalidate();
                 break;
@@ -224,18 +217,16 @@ public class SortView extends View {
         RectF rectF = allPositions.get(downIndex);
         rectF.left += dx;
         rectF.right += dx;
-        if(rectF.left < dragMinX){
-            rectF.left = dragMinX;
+        if(rectF.left < canDragMinX){
+            rectF.left = canDragMinX;
             rectF.right = rectF.left + viewHeight;
         }
-        if(rectF.right > dragMaxX){
-            rectF.right = dragMaxX;
+        if(rectF.right > canDragMaxX){
+            rectF.right = canDragMaxX;
             rectF.left = rectF.right - viewHeight;
         }
-        dragRect.left = rectF.left;
-        dragRect.right = rectF.right;
 
-        lastX = Math.min(Math.max(curX,dragMinX+(viewHeight>>1)),dragMaxX-(viewHeight>>1));
+        lastX = Math.min(Math.max(curX, canDragMinX +(viewHeight>>1)), canDragMaxX -(viewHeight>>1));
         int index = allIndex.indexOf(downIndex);
         Log.d(TAG,"moveAndSort downIndex ' index is "+index);
         boolean toLeft = dx < 0;
